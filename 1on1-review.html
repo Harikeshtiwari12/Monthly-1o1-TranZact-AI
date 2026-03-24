@@ -290,6 +290,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 <script>
 const STORAGE_KEY='1on1_review_v1';
 const SESSION_KEY='1on1_session_v1';
+const SHEET_URL=''; // paste your Apps Script Web App URL here
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 const CULTURE_QS=[
   "When you disagree with a decision made above you — do you push back, stay silent, or find another way? Give me a real example of how you handled it.",
@@ -549,6 +550,16 @@ let saved=[];
 // ── Persistence ────────────────────────────────────────────────────────────
 function persist(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(saved));}catch(e){}}
 function hydrate(){try{const d=localStorage.getItem(STORAGE_KEY);if(d)saved=JSON.parse(d);}catch(e){saved=[];}}
+function syncToSheet(record){
+  if(!SHEET_URL) return;
+  const payload={...record, submittedBy: currentUser.name};
+  fetch(SHEET_URL, {
+    method:'POST',
+    mode:'no-cors',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(payload)
+  }).catch(()=>{}); // silent fail — local save already done
+}
 
 // ── Utils ──────────────────────────────────────────────────────────────────
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
@@ -789,6 +800,7 @@ function saveRec(){
     saved.push(record);
   }
   persist();
+  syncToSheet(record); // sync to Google Sheet
   resetForm();
   switchTab(1);
 }
